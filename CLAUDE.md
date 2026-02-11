@@ -129,3 +129,6 @@ This is a Retrieval-Augmented Generation (RAG) system for course materials with 
 - FastAPI serves both API endpoints (/api/*) and static frontend files
 - CORS is configured for development with broad permissions
 - No-cache headers are set for static files during development
+
+## Memory Notes
+- Always use uv to run the server and don't use pip directly
