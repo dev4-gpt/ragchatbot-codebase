@@ -138,19 +138,60 @@ function addMessage(content, type, sources = null, sourceLinks = null, isWelcome
     let html = `<div class="message-content">${displayContent}</div>`;
     
     if (sources && sources.length > 0) {
-        // Create sources with clickable links when available
-        const sourcesHtml = sources.map((source, index) => {
+        // Group sources by course for lesson-wise view
+        const courseMap = new Map();
+        sources.forEach((source, index) => {
             const link = sourceLinks && sourceLinks[index];
-            if (link) {
-                return `<a href="${link}" target="_blank" class="source-link">${source}</a>`;
+            // Parse "Course Title - Lesson N" format
+            const separatorIdx = source.lastIndexOf(' - Lesson ');
+            let courseName, lessonLabel;
+            if (separatorIdx !== -1) {
+                courseName = source.substring(0, separatorIdx);
+                lessonLabel = source.substring(separatorIdx + 3); // "Lesson N"
             } else {
-                return source;
+                courseName = source;
+                lessonLabel = null;
             }
-        }).join(', ');
-        
+            if (!courseMap.has(courseName)) {
+                courseMap.set(courseName, []);
+            }
+            // Avoid duplicate lessons within same course
+            const existing = courseMap.get(courseName);
+            const dupKey = lessonLabel || '__no_lesson__';
+            if (!existing.some(e => (e.lessonLabel || '__no_lesson__') === dupKey)) {
+                existing.push({ lessonLabel, link });
+            }
+        });
+
+        // Sort lessons numerically within each course
+        courseMap.forEach((lessons) => {
+            lessons.sort((a, b) => {
+                const numA = a.lessonLabel ? parseInt(a.lessonLabel.replace(/\D/g, '')) || 0 : 0;
+                const numB = b.lessonLabel ? parseInt(b.lessonLabel.replace(/\D/g, '')) || 0 : 0;
+                return numA - numB;
+            });
+        });
+
+        // Build lesson-wise HTML
+        let sourcesHtml = '';
+        courseMap.forEach((lessons, courseName) => {
+            sourcesHtml += `<div class="source-course-group">`;
+            sourcesHtml += `<div class="source-course-title">📚 ${escapeHtml(courseName)}</div>`;
+            sourcesHtml += `<ul class="source-lesson-list">`;
+            lessons.forEach(({ lessonLabel, link }) => {
+                const display = lessonLabel || 'General';
+                if (link) {
+                    sourcesHtml += `<li><a href="${link}" target="_blank" class="source-link">${display}</a></li>`;
+                } else {
+                    sourcesHtml += `<li><span class="source-tag">${display}</span></li>`;
+                }
+            });
+            sourcesHtml += `</ul></div>`;
+        });
+
         html += `
-            <details class="sources-collapsible">
-                <summary class="sources-header">Sources</summary>
+            <details class="sources-collapsible" open>
+                <summary class="sources-header">📖 Sources</summary>
                 <div class="sources-content">${sourcesHtml}</div>
             </details>
         `;
