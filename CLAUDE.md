@@ -20,6 +20,7 @@ cd backend && uv run uvicorn app:app --reload --port 8000
 uv sync
 
 # Add new dependencies (use uv instead of pip)
+# use uv to run Python files
 uv add package_name
 
 # Environment variables required
