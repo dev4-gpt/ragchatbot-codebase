@@ -53,3 +53,37 @@ The application will be available at:
 - Web Interface: `http://localhost:8000`
 - API Documentation: `http://localhost:8000/docs`
 
+## Claude Code Memory Files
+
+Claude Code reads instructions from three memory file locations. Each serves a different scope:
+
+### 1. Project Memory (Shared with team, committed to Git)
+```bash
+# File: ./CLAUDE.md (root of the project)
+# Scope: Everyone who clones this repo gets these instructions
+# Example content:
+cat CLAUDE.md
+```
+Use this for project-wide rules like architecture decisions, coding standards, and build commands.
+
+### 2. Local Project Memory (Personal, NOT committed to Git)
+```bash
+# File: ./CLAUDE.local.md (root of the project)
+# Scope: Only YOU on this machine. Add to .gitignore.
+# Create it:
+echo "# Local Memory" > CLAUDE.local.md
+echo "- Always use uv, never pip" >> CLAUDE.local.md
+```
+Use this for personal preferences that shouldn't affect other developers (e.g., "use vim keybindings", "always use uv").
+
+### 3. User Memory (Global, applies to ALL projects)
+```bash
+# File: ~/.claude/CLAUDE.md (your home directory)
+# Scope: Every project you open with Claude Code on this machine
+# Create it:
+mkdir -p ~/.claude
+echo "# Global Memory" > ~/.claude/CLAUDE.md
+echo "- Prefer concise responses" >> ~/.claude/CLAUDE.md
+```
+Use this for universal preferences like response style, preferred language, or global coding conventions.
+
