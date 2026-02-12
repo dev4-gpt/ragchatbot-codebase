@@ -45,6 +45,16 @@ function setupEventListeners() {
             toggleTheme();
         }
     });
+
+    // Keyboard shortcut for new chat (Ctrl/Cmd + Shift + N)
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'N') {
+            e.preventDefault();
+            if (!newChatButton.disabled) {
+                startNewChat();
+            }
+        }
+    });
     
     // Suggested questions
     document.querySelectorAll('.suggested-item').forEach(button => {
@@ -214,6 +224,13 @@ function escapeHtml(text) {
 // Removed removeMessage function - no longer needed since we handle loading differently
 
 async function startNewChat() {
+    // Prevent double-clicks or starting while a query is in-flight
+    if (newChatButton.disabled || chatInput.disabled) return;
+
+    // Show loading state on the button
+    newChatButton.disabled = true;
+    newChatButton.classList.add('is-loading');
+
     // Clear the current session on backend if exists
     if (currentSessionId) {
         try {
@@ -231,9 +248,20 @@ async function startNewChat() {
             // Continue with frontend cleanup even if backend fails
         }
     }
-    
+
+    // Animate old messages out, then reset
+    if (chatMessages.children.length > 0) {
+        chatMessages.classList.add('is-clearing');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        chatMessages.classList.remove('is-clearing');
+    }
+
     // Clear frontend state and UI
     await createNewSession();
+
+    // Restore button
+    newChatButton.disabled = false;
+    newChatButton.classList.remove('is-loading');
 }
 
 async function createNewSession() {

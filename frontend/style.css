@@ -849,7 +849,7 @@ details[open] .suggested-header::before {
     text-transform: none;
 }
 
-/* New Chat Button */
+/* New Chat Button — styled to match .stats-header / .suggested-header */
 .new-chat-button {
     font-size: 0.875rem;
     font-weight: 600;
@@ -863,15 +863,72 @@ details[open] .suggested-header::before {
     letter-spacing: 0.5px;
     transition: color 0.2s ease;
     width: 100%;
+    display: block;
+    position: relative;
 }
 
 .new-chat-button:focus {
-    outline: none;
     color: var(--primary-color);
 }
 
 .new-chat-button:hover {
     color: var(--primary-color);
+}
+
+.new-chat-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.new-chat-button:disabled:hover {
+    color: var(--text-secondary);
+}
+
+.new-chat-button .btn-icon {
+    display: inline-block;
+    margin-right: 0.5rem;
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.new-chat-button:hover .btn-icon {
+    transform: rotate(90deg);
+}
+
+/* New chat button loading spinner */
+.new-chat-button.is-loading .btn-icon {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Keyboard shortcut hint */
+.new-chat-shortcut {
+    float: right;
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.new-chat-button:hover .new-chat-shortcut {
+    color: var(--primary-color);
+    opacity: 0.7;
+}
+
+/* Chat messages fade-out transition */
+.chat-messages.is-clearing {
+    animation: fadeOut 0.2s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
 }
 
 /* Suggested Questions in Sidebar */

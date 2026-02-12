@@ -103,9 +103,10 @@ async def get_course_stats():
 
 @app.post("/api/clear-session")
 async def clear_session(request: ClearSessionRequest):
-    """Clear a conversation session"""
+    """Clear a conversation session and reset tool state"""
     try:
         rag_system.session_manager.clear_session(request.session_id)
+        rag_system.tool_manager.reset_sources()
         return {"status": "success", "message": "Session cleared successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

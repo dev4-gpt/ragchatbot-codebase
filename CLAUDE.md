@@ -133,3 +133,5 @@ This is a Retrieval-Augmented Generation (RAG) system for course materials with 
 
 ## Memory Notes
 - Always use uv to run the server and don't use pip directly
+
+# dont run the server using ./run.sh I will start it myself
