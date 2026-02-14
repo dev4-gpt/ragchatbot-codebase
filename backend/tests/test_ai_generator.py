@@ -280,6 +280,10 @@ class TestAIGenerator:
         assert "You can make up to 2 rounds of tool calls" in AIGenerator.SYSTEM_PROMPT
         assert "Brief, Concise and focused" in AIGenerator.SYSTEM_PROMPT
 
+    def test_max_tool_rounds_constant(self):
+        """Test that MAX_TOOL_ROUNDS is set and used"""
+        assert AIGenerator.MAX_TOOL_ROUNDS == 2
+
     def test_api_parameters_consistency(self, mock_anthropic_client):
         """Test that API parameters are consistent across calls"""
         with patch("ai_generator.anthropic.Anthropic") as mock_anthropic:

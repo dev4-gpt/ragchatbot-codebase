@@ -1,10 +1,15 @@
-from typing import Any, Dict, List, Optional
+import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 import anthropic
+
+logger = logging.getLogger(__name__)
 
 
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
+
+    MAX_TOOL_ROUNDS = 2
 
     # Static system prompt to avoid rebuilding on each call
     SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to search tools for course information.
@@ -59,7 +64,7 @@ Provide only the direct answer to what was asked.
     ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
-        Supports up to 2 sequential rounds of tool calling.
+        Supports up to MAX_TOOL_ROUNDS sequential rounds of tool calling.
 
         Args:
             query: The user's question or request
@@ -81,22 +86,13 @@ Provide only the direct answer to what was asked.
         # Start with initial messages
         messages = [{"role": "user", "content": query}]
 
-        # Execute up to 2 rounds of tool calling
-        for round_num in range(2):
-            # Prepare API call parameters
-            api_params = {
-                **self.base_params,
-                "messages": messages,
-                "system": system_content,
-            }
+        # Execute up to MAX_TOOL_ROUNDS rounds of tool calling
+        for round_num in range(self.MAX_TOOL_ROUNDS):
+            api_params = self._build_api_params(messages, system_content, tools)
 
-            # Add tools if available
-            if tools:
-                api_params["tools"] = tools
-                api_params["tool_choice"] = {"type": "auto"}
-
-            # Get response from Claude
+            logger.info("Round %d/%d — calling API", round_num + 1, self.MAX_TOOL_ROUNDS)
             response = self.client.messages.create(**api_params)
+            logger.info("Round %d — stop_reason=%s", round_num + 1, response.stop_reason)
 
             # Handle tool execution if needed
             if response.stop_reason == "tool_use" and tool_manager:
@@ -107,19 +103,45 @@ Provide only the direct answer to what was asked.
                     break
             else:
                 # No tool use, return direct response
+                logger.info("Direct response (no tool use) after round %d", round_num + 1)
                 return response.content[0].text
 
-        # After max rounds, make final call without tools to get response
-        final_params = {
+        # After max rounds, make final call without tools to force a response
+        logger.info("Max rounds reached — making final call without tools")
+        final_params = self._build_api_params(messages, system_content, tools=None)
+        final_response = self.client.messages.create(**final_params)
+        return final_response.content[0].text
+
+    def _build_api_params(
+        self,
+        messages: List,
+        system_content: str,
+        tools: Optional[List] = None,
+    ) -> Dict[str, Any]:
+        """
+        Build API call parameters, optionally including tools.
+
+        Args:
+            messages: Current message history
+            system_content: System prompt (with optional conversation history)
+            tools: Tool definitions to include, or None to omit
+
+        Returns:
+            Dict of parameters ready for client.messages.create()
+        """
+        params: Dict[str, Any] = {
             **self.base_params,
             "messages": messages,
             "system": system_content,
         }
+        if tools:
+            params["tools"] = tools
+            params["tool_choice"] = {"type": "auto"}
+        return params
 
-        final_response = self.client.messages.create(**final_params)
-        return final_response.content[0].text
-
-    def _handle_tool_execution(self, initial_response, messages: List, tool_manager):
+    def _handle_tool_execution(
+        self, initial_response, messages: List, tool_manager
+    ) -> Tuple[List, bool]:
         """
         Handle execution of tool calls and update message history.
 
@@ -138,9 +160,16 @@ Provide only the direct answer to what was asked.
         tool_results = []
         for content_block in initial_response.content:
             if content_block.type == "tool_use":
+                tool_name = content_block.name
+                tool_input = content_block.input
+                logger.info("Executing tool: %s(%s)", tool_name, tool_input)
+
                 try:
-                    tool_result = tool_manager.execute_tool(
-                        content_block.name, **content_block.input
+                    tool_result = tool_manager.execute_tool(tool_name, **tool_input)
+                    logger.info(
+                        "Tool %s returned %d chars",
+                        tool_name,
+                        len(tool_result) if tool_result else 0,
                     )
 
                     tool_results.append(
@@ -151,7 +180,10 @@ Provide only the direct answer to what was asked.
                         }
                     )
                 except Exception as e:
-                    # Tool execution failed, stop rounds
+                    # Tool execution failed, log and stop rounds
+                    logger.warning(
+                        "Tool %s failed: %s", tool_name, str(e), exc_info=True
+                    )
                     tool_results.append(
                         {
                             "type": "tool_result",
