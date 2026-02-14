@@ -41,6 +41,7 @@ dev = [
     "flake8>=7.3.0",
     "isort>=6.0.1",
     "mypy>=1.17.1",
+    "pytest-cov>=6.1.0",
 ]
 
 [tool.black]
@@ -87,3 +88,16 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 exclude = ["build", "dist", ".venv"]
+
+[tool.coverage.run]
+source = ["backend"]
+omit = ["backend/tests/*", "backend/__pycache__/*", "backend/chroma_db/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
