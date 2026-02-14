@@ -313,9 +313,24 @@ async function loadCourseStats() {
 
 // Theme Functions
 function initializeTheme() {
-    // Get saved theme preference or default to dark
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
+    const savedTheme = localStorage.getItem('theme');
+
+    if (savedTheme) {
+        // User has an explicit preference — honour it
+        setTheme(savedTheme);
+    } else {
+        // No saved preference — follow the OS / system setting
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    // Listen for system theme changes (e.g. macOS auto dark-mode at sunset)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only follow the OS if the user hasn't manually picked a theme
+        if (!localStorage.getItem('theme')) {
+            setTheme(e.matches ? 'dark' : 'light', /* persist */ false);
+        }
+    });
 }
 
 function toggleTheme() {
@@ -324,15 +339,21 @@ function toggleTheme() {
     setTheme(newTheme);
 }
 
-function setTheme(theme) {
+function setTheme(theme, persist = true) {
     if (theme === 'light') {
         document.documentElement.setAttribute('data-theme', 'light');
         themeToggle.setAttribute('aria-label', 'Switch to dark theme');
+        themeToggle.setAttribute('title', 'Switch to dark theme (⌘⇧T)');
+        themeToggle.setAttribute('aria-checked', 'true');
     } else {
         document.documentElement.removeAttribute('data-theme');
         themeToggle.setAttribute('aria-label', 'Switch to light theme');
+        themeToggle.setAttribute('title', 'Switch to light theme (⌘⇧T)');
+        themeToggle.setAttribute('aria-checked', 'false');
     }
-    
-    // Save theme preference
-    localStorage.setItem('theme', theme);
+
+    // Save theme preference (so future visits remember)
+    if (persist) {
+        localStorage.setItem('theme', theme);
+    }
 }
