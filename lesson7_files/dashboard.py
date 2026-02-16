@@ -102,7 +102,7 @@ st.markdown("""
 def load_dashboard_data():
     """Load and cache data for dashboard"""
     try:
-        loader, processed_data = load_and_process_data('ecommerce_data/')
+        loader, processed_data = load_and_process_data('lesson7_files/ecommerce_data/')
         return loader, processed_data
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
